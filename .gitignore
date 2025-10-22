@@ -1,0 +1,11 @@
+# Ignore Python virtual environments
+.venv/
+venv/
+*venv
+
+# Ignore common data science/Python directories
+__pycache__/
+*.pyc
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints
