@@ -1,0 +1,127 @@
+Resnet50-stream.py
+---
+### 🧪 Fake Product Image Tagging Pipeline Summary
+**1. Data Generation**
+- Creates 50 synthetic product records using `Faker`.
+- Each product gets a unique placeholder image URL from `picsum.photos`.
+
+**2. Image Download**
+- Downloads each image to a local `fake-images/` directory.
+- Handles errors gracefully with logging.
+
+**3. Model Setup**
+- Loads pretrained `ResNet50` from `torchvision` with ImageNet weights.
+- Retrieves ImageNet class labels for interpretation.
+
+**4. Image Classification**
+- Preprocesses each image (resize, normalize).
+- Runs inference and applies softmax to get top prediction.
+- Tags image as:
+  - `"alcoholic"` if label contains alcohol-related terms.
+  - `"abusive"` if label contains violence-related terms.
+  - `"safe"` otherwise.
+
+**5. Output**
+- Adds `content_tag` to the product DataFrame.
+- Prints summary of tagged images.
+- Saves final results to `tagged-images.csv`.
+---
+
+Sparkudf-resnet50.py
+---
+### ⚡ Spark UDF Pipeline for Image Tagging
+**1. Spark Setup**
+- Initializes a Spark session for distributed processing.
+
+**2. Model Preparation**
+- Loads pretrained `ResNet50` with ImageNet weights.
+- Broadcasts the model and label list across Spark workers for efficient access.
+
+**3. Image Download UDF**
+- Downloads product images from placeholder URLs.
+- Saves them locally in a `fake-images/` directory.
+- Returns the local file path for each image.
+
+**4. Image Classification UDF**
+- Opens and preprocesses each image (resize, normalize).
+- Runs inference using the broadcasted model.
+- Tags image as:
+  - `"alcoholic"` if label contains alcohol-related terms.
+  - `"abusive"` if label contains violence-related terms.
+  - `"safe"` otherwise.
+
+**5. Pipeline Execution**
+- Reads product data from `products.csv`.
+- Applies both UDFs to generate `local_image_path` and `content_tag`.
+- Writes the tagged output to `tagged-images-spark.csv`.
+---
+
+spark-stream.py
+---
+### 🔄 Spark Structured Streaming for Image Processing
+**1. Configuration**
+- Monitors a local image directory (`fake_images`) for new `.jpg` files.
+- Uses a checkpoint directory to maintain stream state and fault tolerance.
+
+**2. Spark Session Initialization**
+- Creates a Spark session named `"ImageFileStreamProcessor"`.
+- Sets log level to `WARN` to reduce console noise.
+
+**3. Streaming Source**
+- Reads image files as a stream using `format("image")`.
+- Filters only `.jpg` files via `pathGlobFilter`.
+
+**4. Stream Processing**
+- Extracts metadata from each image:
+  - `file_path`, `processing_time`, `width`, `height`, `nChannels`, and raw `image.data`.
+
+**5. Streaming Sink**
+- Outputs processed image metadata to the console every 5 seconds.
+- Uses `append` mode to continuously add new records.
+
+**6. Execution**
+- Starts the stream and waits indefinitely for new image files.
+- Prints monitoring status and source directory path.
+---
+
+stream-images.py
+---
+### 🌐 Flask Server for Local Image Hosting
+**1. Configuration**
+- Serves images from a local directory named `fake_images`.
+- Constructs the absolute path using the current script location.
+
+**2. Flask Endpoint**
+- Defines `/images/<filename>` route to serve individual image files.
+- Uses `send_from_directory` for secure file delivery.
+- Returns a 404 error if the requested image is not found.
+
+**3. Execution**
+- Checks if the image directory exists before starting.
+- Runs the server on `localhost:5000` with debug mode enabled.
+- Example access URL: `http://127.0.0.1:5000/images/product_12345.jpg`
+---
+
+generate-images.py
+---
+### 🖼️ Fake Product Image Generator & Downloader
+**1. Setup**
+- Uses `Faker` to create 50 synthetic product records.
+- Each product is assigned a unique `product_id` and a placeholder image URL from `picsum.photos`.
+- Images are saved to a local directory named `fake-images`.
+
+**2. Data Generation**
+- Constructs a DataFrame with:
+  - `product_id`
+  - `product_name` (random word + "Item")
+  - `placeholder_image_url` (unique seed-based image)
+
+**3. Image Download Function**
+- Downloads each image using `requests`.
+- Saves it as `product_<product_id>.jpg` in the `fake-images/` folder.
+- Handles errors gracefully and logs download status.
+
+**4. Final Output**
+- Adds a `local_image_path` column to the DataFrame.
+- Prints the updated DataFrame with product IDs, image URLs, and local paths.
+---
